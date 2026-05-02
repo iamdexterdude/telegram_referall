@@ -3,6 +3,7 @@ main.py — Application entry point for Referral Bot v2.
 """
 import asyncio
 import logging
+from aiohttp import web
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
@@ -22,6 +23,19 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+async def health(request):
+    return web.Response(text="OK")
+
+
+async def start_web():
+    app = web.Application()
+    app.router.add_get("/", health)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", 10000)
+    await site.start()
+
+
 async def main() -> None:
     logger.info("Initialising database …")
     await init_db()
@@ -32,7 +46,6 @@ async def main() -> None:
     )
     dp = Dispatcher(storage=MemoryStorage())
 
-    # Middleware order matters: DB first, then ban check
     dp.update.middleware(DbSessionMiddleware())
     dp.update.middleware(BanCheckMiddleware())
 
@@ -40,6 +53,8 @@ async def main() -> None:
 
     await bot.delete_webhook(drop_pending_updates=True)
     logger.info("Bot is running → @%s", config.bot_username)
+
+    await start_web()
 
     try:
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
