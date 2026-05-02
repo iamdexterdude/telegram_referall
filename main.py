@@ -1,5 +1,5 @@
 """
-main.py — Application entry point for Referral Bot v2.
+did it main.py — Application entry point for Referral Bot v2.
 """
 import asyncio
 import logging
